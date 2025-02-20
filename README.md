@@ -1,20 +1,20 @@
-# Simple Flask Todo API
+# Story to Knowledge Graph API
 
-This is a simple, open-source REST API built with Flask that provides basic CRUD operations for a todo list. It's designed to be easy to understand, modify, and deploy.
+This is a Flask-based API that converts story text into a knowledge graph using Neo4j. The API extracts entities, relationships, and properties from text to create a structured graph representation.
 
 ## Features
 
-- RESTful API endpoints for todo items
+- Convert story text into knowledge graph nodes and relationships
+- Neo4j graph database integration
+- RESTful API endpoints for graph operations
 - CORS enabled for cross-origin requests
-- Simple in-memory data storage (can be easily modified to use a database)
-- JSON response format
+- Test data generation with Alice in Wonderland example
 
-## API Endpoints
+## Prerequisites
 
-- `GET /api/todos` - Get all todos
-- `POST /api/todos` - Create a new todo
-- `PUT /api/todos/<id>` - Update a todo
-- `DELETE /api/todos/<id>` - Delete a todo
+- Python 3.9+
+- Neo4j Database (local or cloud instance)
+- Conda (recommended for environment management)
 
 ## Setup
 
@@ -22,14 +22,14 @@ This is a simple, open-source REST API built with Flask that provides basic CRUD
 
 ```bash
 git clone <your-repo-url>
-cd <repo-name>
+cd story-to-knowledge-graph
 ```
 
 2. Create a Conda environment:
 
 ```bash
-conda create -n todo-api python=3.9
-conda activate todo-api
+conda create -n knowledge-graph python=3.9
+conda activate knowledge-graph
 ```
 
 3. Install dependencies:
@@ -38,7 +38,17 @@ conda activate todo-api
 pip install -r requirements.txt
 ```
 
-4. Run the application:
+4. Set up Neo4j:
+
+   - Install and start Neo4j (local) or create a cloud instance
+   - Set the following environment variables:
+     ```bash
+     NEO4J_URI=bolt://localhost:7687  # or your cloud URI
+     NEO4J_USER=neo4j
+     NEO4J_PASSWORD=your-password
+     ```
+
+5. Run the application:
 
 ```bash
 python app.py
@@ -46,33 +56,38 @@ python app.py
 
 The API will be available at `http://localhost:5000`
 
+## API Endpoints
+
+- `POST /api/graph/create` - Create a new knowledge graph from text
+- `GET /api/graph/test` - Generate a test knowledge graph (Alice in Wonderland example)
+- `GET /api/graph/data` - Get all nodes and relationships in the current graph
+- `DELETE /api/graph/clear` - Clear the entire graph database
+
 ## Development
 
 To modify the API for your needs:
 
-1. Add new routes in `app.py`
-2. Modify the data model (currently using a simple list)
-3. Add additional dependencies to `requirements.txt`
-
-## Deployment
-
-This API can be deployed to various platforms:
-TBD
+1. Extend the graph extraction logic in `services/graph_extractor.py`
+2. Add new graph operations in `core/neo4j_graph_builder.py`
+3. Add new API endpoints in `app.py`
+4. Add additional dependencies to `requirements.txt`
 
 ## Example Usage
 
 ```python
-# Create a new todo
-curl -X POST -H "Content-Type: application/json" -d '{"title":"Buy groceries"}' http://localhost:5000/api/todos
+# Create a test knowledge graph
+curl -X GET http://localhost:5000/api/graph/test
 
-# Get all todos
-curl http://localhost:5000/api/todos
+# Create a knowledge graph from text
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"text":"Your story text here"}' \
+  http://localhost:5000/api/graph/create
 
-# Update a todo
-curl -X PUT -H "Content-Type: application/json" -d '{"completed":true}' http://localhost:5000/api/todos/1
+# Get the current graph data
+curl http://localhost:5000/api/graph/data
 
-# Delete a todo
-curl -X DELETE http://localhost:5000/api/todos/1
+# Clear the graph
+curl -X DELETE http://localhost:5000/api/graph/clear
 ```
 
 ## Contributing
