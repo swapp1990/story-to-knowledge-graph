@@ -2,13 +2,14 @@ from typing import Dict, List, Any
 import json
 import os
 
-# LLM imports commented out for now - will be implemented later
 # from core.prompt_manager import PromptManager
 # from core.llm_client import LLMClient
 from core.neo4j_graph_builder import Neo4jGraphBuilder
+from core.llm_client import LLMClient
+from services.prompt_manager import PromptManager
 
 class GraphExtractor:
-    def __init__(self, neo4j_builder: Neo4jGraphBuilder, llm_client=None):
+    def __init__(self, neo4j_builder: Neo4jGraphBuilder, llm_client=LLMClient):
         # llm_client is optional for now
         self.neo4j_builder = neo4j_builder
         self.llm_client = llm_client
@@ -229,25 +230,144 @@ class GraphExtractor:
             }
         }
 
-    def build_knowledge_graph(self, text: str) -> Dict[str, Any]:
+    def extract_graph_nodes_and_relations(self, text: str) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Builds a knowledge graph in Neo4j from input text by extracting nodes and relationships.
-        Currently returns a placeholder response as LLM implementation is pending.
+        Extract both nodes and relationships from text using predefined patterns.
+        Returns a dictionary containing nodes and relationships.
         
-        Args:
-            text: Input text to extract graph data from
-            
-        Returns:
-            Dict with metadata and graph data (currently placeholder data)
+        Note: This is a placeholder implementation. The actual LLM-based implementation
+        will be added later.
         """
-        if not self.neo4j_builder:
+        GRAPH_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'graph')
+        try:
+            with open(os.path.join(GRAPH_DIR, 'nodes_schema.json'), 'r') as f:
+                schema_json = json.load(f)
+            schema_json = json.dumps(schema_json)
+            # Get the system and user prompts
+            system_prompt_nodes = PromptManager.get_prompt("system", "GRAPH_NODE_EXTRACTOR")
+            user_prompt_nodes = PromptManager.get_prompt("user", "GRAPH_NODE_EXTRACTOR", text=text, schema_json=schema_json)
+            # print("--------------------------------")
+            # print(system_prompt_nodes)
+            # print("--------------------------------")
+            # print("--------------------------------")
+            # print(user_prompt_nodes)
+            # print("--------------------------------")
+
+        except Exception as e:
+            print(f"Error loading prompts: {e}")
             return {
                 "status": {
                     "success": False,
-                    "message": "Neo4j builder not initialized"
+                    "message": f"Error loading prompts: {e}"
+                }
+            }
+        
+        try:
+            response = self.llm_client.generate_json(
+                    prompt=user_prompt_nodes,
+                    system_prompt=system_prompt_nodes,
+                    nsfw=False
+            )
+
+            extracted_data = json.loads(response)
+        except Exception as e:
+            print(f"Error generating LLM Response: {e}")
+            return {
+                "status": {
+                    "success": False,
+                    "message": f"Error generating LLM Response: {e}"
+                }
+            }
+        
+        try:
+            nodes = extracted_data.get("nodes", [])
+            self.neo4j_builder.clear_database()
+            node_ids = {}
+            for node_data in nodes:
+                properties = node_data["properties"]
+                # Ensure required properties exist and clean properties
+                if "name" not in node_data["properties"]:
+                    continue
+                    
+                node = self.neo4j_builder.create_node(node_data["type"], properties)
+                node_ids[properties["name"]] = node["elementId"]
+                # Get the complete graph data
+            graph_data = self.neo4j_builder.get_graph_data()
+            graphdb_nodes = graph_data["nodes"]
+            node_types = list(set(node["type"] for node in nodes))
+        except Exception as e:
+            print(f"Error creating graph nodes: {e}")
+            return {
+                "status": {
+                    "success": False,
+                    "message": f"Error creating graph nodes: {e}"
+                }
+            }
+        
+        try:
+            with open(os.path.join(GRAPH_DIR, 'relationships_schema.json'), 'r') as f:
+                schema_json = json.load(f)
+            schema_json = json.dumps(schema_json)
+            # Get the system and user prompts
+            system_prompt_relations = PromptManager.get_prompt("system", "GRAPH_RELATIONSHIP_EXTRACTOR")
+            user_prompt_relations = PromptManager.get_prompt("user", "GRAPH_RELATIONSHIP_EXTRACTOR", text=text, schema_json=schema_json, nodes_list=graphdb_nodes)
+            # print("--------------------------------")
+            # print(system_prompt_relations)
+            # print("--------------------------------")
+            # print("--------------------------------")
+            # print(user_prompt_relations)
+            # print("--------------------------------")
+        except Exception as e:
+            print(f"Error loading relationship prompts: {e}")
+            return {
+                "status": {
+                    "success": False,
+                    "message": f"Error loading relationship prompts: {e}"
+                }
+            }
+        
+        try:
+            response = self.llm_client.generate_json(
+                    prompt=user_prompt_relations,
+                    system_prompt=system_prompt_relations,
+                    nsfw=False
+            )
+
+            extracted_data = json.loads(response)
+            relationships = extracted_data.get("relationships", [])
+
+            #add relationships to neo4j
+            for rel in relationships:
+                from_id = rel["source_node"]
+                to_id = rel["target_node"]
+                properties = rel["properties"]
+                self.neo4j_builder.create_relationship(from_id, to_id, rel["type"], rel["properties"])
+            
+            relationship_types = list(set(rel["type"] for rel in extracted_data["relationships"]))
+            graph_data = self.neo4j_builder.get_graph_data()
+        except Exception as e:
+            print(f"Error creating graph relationships: {e}")
+            return {
+                "status": {
+                    "success": False,
+                    "message": f"Error creating graph relationships: {e}"
+                }
+            }
+        
+        return {
+                "metadata": {
+                    "version": "1.0",
+                    "description": "Knowledge graph from input text",
+                    "node_count": len(graph_data["nodes"]),
+                    "relationship_count": len(graph_data["relationships"]),
+                    "node_types": node_types,
+                    "relationship_types": relationship_types
+                },
+                "graph_data": graph_data,
+                "status": {
+                    "success": True,
+                    "message": "Knowledge graph created successfully"
                 }
             }
 
-        # For now, return the test knowledge graph as a placeholder
-        return self.create_test_knowledge_graph()
 

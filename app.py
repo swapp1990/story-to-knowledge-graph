@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import logging
 
 from core.neo4j_graph_builder import Neo4jGraphBuilder
+from core.llm_client import LLMClient
 from services.graph_extractor import GraphExtractor
 from api.routes import api, init_routes
 
@@ -20,7 +21,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 neo4j_builder = Neo4jGraphBuilder()
-graph_extractor = GraphExtractor(neo4j_builder)
+llm_client = LLMClient()
+graph_extractor = GraphExtractor(neo4j_builder, llm_client)
 
 init_routes(api, graph_extractor)
 app.register_blueprint(api)

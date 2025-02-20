@@ -1,0 +1,27 @@
+{
+  "node_types": {
+    "Character": {
+      "required_properties": {
+        "name": "string"
+      },
+      "optional_properties": {
+        "age": "number",
+        "occupation": "string",
+        "traits": "string[]",
+        "gender": "string",
+        "species": "string",
+        "physical_description": "string",
+        "initial_location": "string"
+      }
+    },
+    "Location": {
+      "required_properties": {
+        "name": "string"
+      },
+      "optional_properties": {
+        "description": "string",
+        "features": "string[]"
+      }
+    }
+  }
+}

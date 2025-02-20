@@ -1,0 +1,55 @@
+{
+  "relationship_types": {
+    "LOCATED_AT": {
+      "valid_sources": ["Character"],
+      "valid_targets": ["Location"],
+      "properties": {
+        "required": {
+          "since": "string"
+        },
+        "optional": {
+          "reason": "string",
+          "temporary": "boolean"
+        }
+      }
+    },
+    "KNOWS": {
+      "valid_sources": ["Character"],
+      "valid_targets": ["Character"],
+      "properties": {
+        "required": {
+          "relationship_type": "string"
+        },
+        "optional": {
+          "since": "string",
+          "strength": "number"
+        }
+      }
+    },
+    "POSSESSES": {
+      "valid_sources": ["Character"],
+      "valid_targets": ["Item"],
+      "properties": {
+        "required": {
+          "acquired_in": "string"
+        },
+        "optional": {
+          "significance": "string",
+          "temporary": "boolean"
+        }
+      }
+    },
+    "PART_OF": {
+      "valid_sources": ["Location"],
+      "valid_targets": ["Location"],
+      "properties": {
+        "required": {
+          "type": "string"
+        },
+        "optional": {
+          "access_type": "string"
+        }
+      }
+    }
+  }
+}

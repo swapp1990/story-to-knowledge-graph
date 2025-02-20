@@ -1,0 +1,28 @@
+GRAPH_NODE_EXTRACTOR: |
+  Schema Definition:
+  {schema_json}
+
+  Text to analyze:
+  {text}
+
+  Extract ONLY the node attributes defined in the above schema that are explicitly mentioned in the text. Return the attributes and their evidence in the required JSON format.
+GRAPH_RELATIONSHIP_EXTRACTOR: |
+  Schema:
+  {schema_json}
+
+  Existing Nodes:
+  {nodes_list}
+
+  Text to analyze:
+  {text}
+
+  Extract relationships between the provided nodes based on the schema. Only extract relationships that are explicitly mentioned in the text between existing nodes. 
+
+  IMPORTANT:
+  1. ONLY use relationship types defined in the schema (Eg. LOCATED_AT, KNOWS, POSSESSES, PART_OF)
+  2. Map similar relationships to these schema types:
+     - Eg. Any character interaction -> KNOWS
+  3. Ensure all required properties are included:
+     - Eg. LOCATED_AT requires "since"
+  4. Add optional properties when available in the text
+  5. Ensure source and target node types match schema requirements
